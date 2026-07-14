@@ -20,7 +20,8 @@ if (-not $pesterModule) {
 Import-Module -Name $pesterModule.Path -Force
 
 $config = New-PesterConfiguration
-$config.Run.Path = Join-Path $PSScriptRoot 'tests'
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$config.Run.Path = Join-Path $repoRoot 'tests'
 $config.Run.Exit = $true
 $config.Output.Verbosity = 'Detailed'
 

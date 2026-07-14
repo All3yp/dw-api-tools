@@ -1,6 +1,6 @@
 # Requires: Pester 5+
 BeforeAll {
-  $modulePath = Join-Path (Split-Path -Parent $PSScriptRoot) 'DwApiCheck.psm1'
+  $modulePath = Join-Path (Split-Path -Parent $PSScriptRoot) 'src\DwApiCheck.psm1'
   Import-Module $modulePath -Force
 }
 
@@ -87,6 +87,11 @@ Describe 'ConvertFrom-DwCliArgument' {
     $parsed.Key | Should -Be 'dw_live_abc'
   }
 
+  It 'handles --mode help' {
+    $parsed = ConvertFrom-DwCliArgument -RemainingArguments @('--mode', 'help')
+    $parsed.Mode | Should -Be 'help'
+  }
+
   It 'handles --help' {
     $parsed = ConvertFrom-DwCliArgument -RemainingArguments @('--help')
     $parsed.ShowHelp | Should -BeTrue
@@ -94,6 +99,33 @@ Describe 'ConvertFrom-DwCliArgument' {
 
   It 'throws on unknown argument' {
     { ConvertFrom-DwCliArgument -RemainingArguments @('--nope') } | Should -Throw '*Unknown argument*'
+  }
+}
+
+Describe 'Show-DwModelsSummary' {
+  It 'prints model ids without throwing' {
+    $response = [pscustomobject]@{
+      data = @(
+        [pscustomobject]@{ id = 'devworld/a'; context_window = 1000; owned_by = 'devworld' }
+        [pscustomobject]@{ id = 'devworld/b'; context_window = 2000; owned_by = 'devworld' }
+      )
+    }
+    { Show-DwModelsSummary -Response $response } | Should -Not -Throw
+  }
+}
+
+Describe 'Show-DwMeSummary' {
+  It 'prints account fields without throwing' {
+    $response = [pscustomobject]@{
+      user = [pscustomobject]@{ telegram_id = '1' }
+      api_key = [pscustomobject]@{
+        plan = 'test'
+        status = 'active'
+        end_date = '2026-01-01'
+        is_expired = $false
+      }
+    }
+    { Show-DwMeSummary -Response $response } | Should -Not -Throw
   }
 }
 

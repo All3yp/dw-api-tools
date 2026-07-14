@@ -1,29 +1,32 @@
-# 🛠️ Guia de Instalação — DW API Tools
+# Guia de Instalacao — DW API Tools
 
-Este guia mostra como instalar o comando `dw_api_check` para usar em qualquer pasta do computador.
+Este guia mostra como instalar o comando `dw` para usar em qualquer
+pasta do computador.
 
-> Este passo a passo foi feito para usuários leigos. Basta copiar e colar os comandos.
-
----
-
-## 📦 O que vem neste pacote?
-
-- 🪟 `dw_api_check.ps1` — script para Windows PowerShell
-- 🐧 `dw_api_check.sh` — script para Linux/macOS
-- 🪟 `install.ps1` — instalador para Windows
-- 🐧 `install.sh` — instalador para Linux/macOS
+> Passo a passo para usuarios leigos: copiar, colar e testar.
 
 ---
 
-## 🔑 Antes de começar: tenha sua chave da API
+## O que vem neste pacote?
 
-Você precisa de uma chave parecida com:
+Na raiz (o que voce usa):
+
+- `Makefile` — `make install`, `make usage`, `make dw MODE=...`
+- `dw` / `dw.cmd` — rodar sem instalar (detecta o sistema)
+
+Interno: `src/` (codigo), `scripts/` (instalador e testes).
+
+---
+
+## Antes de comecar: tenha sua chave da API
+
+Voce precisa de uma chave parecida com:
 
 ```text
 dw_live_...
 ```
 
-A ferramenta usa principalmente a variável:
+A ferramenta usa principalmente:
 
 ```text
 ANTHROPIC_API_KEY
@@ -31,233 +34,220 @@ ANTHROPIC_API_KEY
 
 ---
 
-# 🪟 Instalação no Windows
+## Caminho rapido (recomendado)
 
-## 1. Abra o PowerShell
+Na pasta do projeto, com Make instalado:
 
-Procure por **PowerShell** no menu iniciar.
+```sh
+make install
+```
+
+O Make detecta Windows ou Linux/macOS e chama o instalador certo.
+Depois feche e abra o terminal e teste:
+
+```sh
+dw --help
+dw --mode me
+```
+
+Sem Make:
+
+| Sistema | Comando |
+| --- | --- |
+| Windows PowerShell | `powershell -File .\scripts\install.ps1` |
+| Linux/macOS | `sh ./scripts/install.sh` |
 
 ---
 
-## 2. Entre na pasta do projeto
+## Modos de uso (resumo)
 
-Exemplo:
+| Forma | Exemplos |
+| --- | --- |
+| Instalado | `dw --mode me`, `dw --mode usage`, `dw --help` |
+| Make | `make me`, `make usage`, `make models`, `make dw MODE=usage` |
+| Sem instalar (Windows) | `.\dw.cmd --mode usage` |
+| Sem instalar (Unix) | `./dw --mode usage` |
+
+Modos da API: `me`, `usage`, `models`, `help`.
+
+---
+
+## Instalacao no Windows (detalhes)
+
+### 1. Abra o PowerShell
+
+Procure por **PowerShell** no menu iniciar.
+
+### 2. Entre na pasta do projeto
 
 ```powershell
 cd C:\Users\SeuUsuario\Downloads\dw-api-tools
 ```
 
-> Ajuste o caminho conforme a pasta onde você baixou os arquivos.
+### 3. Instale
 
----
+```powershell
+make install
+```
 
-## 3. Rode o instalador
+Ou direto:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
-.\install.ps1
+powershell -File .\scripts\install.ps1
 ```
 
-O instalador faz 3 coisas:
+O instalador:
 
-1. Copia `dw_api_check.ps1` e `DwApiCheck.psm1` para `%USERPROFILE%\bin`
-2. Adiciona essa pasta ao **PATH do usuário** (cmd, PowerShell, Windows Terminal)
-3. Registra o comando no **profile do PowerShell**, para funcionar mesmo sem depender do PATH
+1. Copia `dw.ps1` e `DwApiCheck.psm1` para `%USERPROFILE%\bin`
+2. Adiciona essa pasta ao PATH do usuario
+3. Tenta registrar o comando no profile do PowerShell
 
-Depois disso, você pode rodar `dw_api_check` de **qualquer pasta**, sem entrar de novo no repositório.
+### 4. Feche e abra o PowerShell
 
----
-
-## 4. Feche e abra o PowerShell novamente
-
-Isso ajuda o Windows a carregar o PATH e o profile novos.
-
----
-
-## 5. Teste a instalação
+### 5. Teste
 
 ```powershell
-dw_api_check --help
+dw --help
+dw --mode me
+make help
 ```
 
-Se aparecer a ajuda do programa, deu certo. 🎉
+### 6. Configure a chave
 
----
-
-## 6. Configure sua chave da API
-
-Para configurar apenas no terminal atual:
+Nesta janela:
 
 ```powershell
 $env:ANTHROPIC_API_KEY = "dw_live_..."
 ```
 
-Para salvar de forma permanente no seu usuário:
+Permanente:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('ANTHROPIC_API_KEY', 'dw_live_...', 'User')
 ```
 
-Depois de salvar de forma permanente, feche e abra o PowerShell novamente.
-
----
-
-## 7. Faça um teste real
+### Desinstalar
 
 ```powershell
-dw_api_check --mode me
-```
-
-Se retornar dados da sua conta, está tudo funcionando. ✅
-
----
-
-## 🧼 Desinstalar no Windows
-
-```powershell
-.\install.ps1 -Uninstall
+make uninstall
 ```
 
 ---
 
-# 🐧 Instalação no Linux/macOS
+## Instalacao no Linux/macOS (detalhes)
 
-## 1. Abra o Terminal
+### 1. Abra o Terminal
 
-Use o aplicativo **Terminal**.
-
----
-
-## 2. Entre na pasta do projeto
-
-Exemplo:
+### 2. Entre na pasta do projeto
 
 ```sh
 cd ~/Downloads/dw-api-tools
 ```
 
----
-
-## 3. Dê permissão de execução
+### 3. Instale
 
 ```sh
-chmod +x ./install.sh ./dw_api_check.sh
+make install
 ```
 
----
-
-## 4. Rode o instalador
+Ou:
 
 ```sh
-./install.sh
+chmod +x ./dw ./scripts/dispatch.sh ./scripts/install.sh
+sh ./scripts/install.sh
 ```
 
-O instalador vai copiar o script para:
+O comando fica em `~/bin/dw`.
 
-```text
-~/bin
-```
-
-E criar o comando:
-
-```text
-dw_api_check
-```
-
----
-
-## 5. Feche e abra o terminal novamente
-
-Depois teste:
+### 4. Feche e abra o terminal; teste
 
 ```sh
-dw_api_check --help
+dw --help
+dw --mode me
+make help
 ```
 
-Se aparecer a ajuda do programa, deu certo. 🎉
-
----
-
-## 6. Configure sua chave da API
+### 5. Configure a chave
 
 ```sh
 export ANTHROPIC_API_KEY="dw_live_..."
 ```
 
-Para salvar permanentemente, adicione essa linha ao arquivo de configuração do seu shell, como `~/.bashrc`, `~/.zshrc` ou equivalente.
+Para salvar, coloque a linha no `~/.bashrc` ou `~/.zshrc`.
 
----
-
-## 7. Faça um teste real
+### Desinstalar
 
 ```sh
-dw_api_check --mode me
-```
-
-Se retornar dados da sua conta, está tudo funcionando. ✅
-
----
-
-## 🧼 Desinstalar no Linux/macOS
-
-```sh
-UNINSTALL=1 ./install.sh
+make uninstall
 ```
 
 ---
 
-# 📄 Alternativa: usar arquivo `.env`
+## Rodar sem instalar
 
-Se você não quiser configurar variável no terminal, crie um arquivo chamado `.env` na mesma pasta do script.
+Ainda na pasta do projeto:
 
-Conteúdo do arquivo:
+```sh
+make me
+make usage
+make models
+make dw MODE=help
+make help
+```
+
+Ou:
+
+| Sistema | Comando |
+| --- | --- |
+| Windows | `.\dw.cmd --mode usage` |
+| Linux/macOS / Git Bash | `./dw --mode usage` |
+
+---
+
+## Alternativa: arquivo `.env`
+
+Crie `.env` na raiz do projeto (ou copie de `.env.example`):
 
 ```env
 ANTHROPIC_API_KEY=dw_live_...
 ```
 
-Depois rode:
+Depois:
 
 ```sh
-dw_api_check --mode me
+dw --mode me
 ```
 
 ---
 
-# 🧪 Testes recomendados
-
-Rode estes comandos:
+## Testes recomendados
 
 ```sh
-dw_api_check --help
-dw_api_check --mode me
-dw_api_check --mode usage
-dw_api_check --mode models
+dw --help
+dw --mode me
+dw --mode usage
+dw --mode models
+```
+
+Unitarios (Pester):
+
+```sh
+make test
 ```
 
 ---
 
-# 🆘 Problemas comuns
+## Problemas comuns
 
-## ❌ O comando `dw_api_check` não foi encontrado
+### O comando `dw` nao foi encontrado
 
-Tente:
+1. Fechar e abrir o terminal
+2. Rodar `dw --help`
+3. Confirmar que `~/bin` (ou `%USERPROFILE%\bin`) esta no PATH
+4. Rodar `make install` de novo
 
-1. Fechar o terminal
-2. Abrir novamente
-3. Rodar:
-
-```sh
-dw_api_check --help
-```
-
-No Linux/macOS, veja também se `~/bin` está no seu `PATH`.
-
----
-
-## ❌ A chave da API não foi encontrada
-
-Configure a chave:
+### A chave da API nao foi encontrada
 
 ```sh
 export ANTHROPIC_API_KEY="dw_live_..."
@@ -265,49 +255,24 @@ export ANTHROPIC_API_KEY="dw_live_..."
 
 Ou use um arquivo `.env`.
 
----
+### A API retornou `Unauthorized` ou `Forbidden`
 
-## ❌ A API retornou `Unauthorized` ou `Forbidden`
+Confira se a chave esta completa, ativa e sem espacos extras.
 
-A chave existe, mas foi recusada.
-
-Confira se:
-
-- você copiou a chave inteira
-- a chave está ativa
-- não há espaços extras
-- você está usando a chave correta
-
----
-
-## ❌ O Windows bloqueou o script
-
-Execute no PowerShell:
+### O Windows bloqueou o script
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass -Force
 ```
 
-Depois rode o instalador novamente.
-
 ---
 
-# ✅ Resumo rápido
-
-Linux/macOS:
+## Resumo rapido
 
 ```sh
-chmod +x ./install.sh ./dw_api_check.sh
-./install.sh
-export ANTHROPIC_API_KEY="dw_live_..."
-dw_api_check --mode me
-```
-
-Windows PowerShell:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass -Force
-.\install.ps1
-$env:ANTHROPIC_API_KEY = "dw_live_..."
-dw_api_check --mode me
+make install
+# configure ANTHROPIC_API_KEY
+dw --mode me
+dw --mode usage
+make models
 ```

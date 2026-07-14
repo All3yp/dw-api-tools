@@ -1,7 +1,7 @@
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
   [string]$InstallDir = (Join-Path $HOME 'bin'),
-  [string]$CommandName = 'dw_api_check',
+  [string]$CommandName = 'dw',
   [switch]$Uninstall,
   [switch]$SkipPathUpdate,
   [switch]$SkipProfileUpdate
@@ -9,9 +9,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$scriptRoot = $PSScriptRoot
-$sourceScript = Join-Path $scriptRoot 'dw_api_check.ps1'
-$sourceModule = Join-Path $scriptRoot 'DwApiCheck.psm1'
+# scripts/ resides one level below the repo root.
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$sourceScript = Join-Path $repoRoot 'src\dw_api_check.ps1'
+$sourceModule = Join-Path $repoRoot 'src\DwApiCheck.psm1'
 $targetScript = Join-Path $InstallDir "$CommandName.ps1"
 $targetModule = Join-Path $InstallDir 'DwApiCheck.psm1'
 $targetCmd = Join-Path $InstallDir "$CommandName.cmd"
@@ -139,7 +140,12 @@ $profileMarkerEnd
     }
 
     if (-not (Test-Path -LiteralPath $path)) {
-      Set-Content -LiteralPath $path -Value ($block.Trim() + "`r`n") -Encoding utf8
+      try {
+        New-Item -ItemType File -Force -Path $path | Out-Null
+        Set-Content -LiteralPath $path -Value ($block.Trim() + "`r`n") -Encoding utf8
+      } catch {
+        Write-Warning "Nao foi possivel criar o profile: $path ($($_.Exception.Message))"
+      }
       continue
     }
 
@@ -156,7 +162,11 @@ $profileMarkerEnd
       $content += "`r`n" + $block.Trim() + "`r`n"
     }
 
-    Set-Content -LiteralPath $path -Value $content -Encoding utf8
+    try {
+      Set-Content -LiteralPath $path -Value $content -Encoding utf8
+    } catch {
+      Write-Warning "Nao foi possivel atualizar o profile: $path ($($_.Exception.Message))"
+    }
   }
 }
 
@@ -204,6 +214,18 @@ if (-not $PSCmdlet.ShouldProcess($InstallDir, "Install $CommandName")) {
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 Copy-Item -Force -LiteralPath $sourceScript -Destination $targetScript
 Copy-Item -Force -LiteralPath $sourceModule -Destination $targetModule
+
+# Remove o nome antigo, se existir (migracao dw_api_check -> dw).
+if ($CommandName -eq 'dw') {
+  foreach ($legacy in @(
+      (Join-Path $InstallDir 'dw_api_check.ps1'),
+      (Join-Path $InstallDir 'dw_api_check.cmd')
+    )) {
+    if (Test-Path -LiteralPath $legacy) {
+      Remove-Item -LiteralPath $legacy -Force
+    }
+  }
+}
 
 $launcher = Get-PowerShellLauncher
 @"

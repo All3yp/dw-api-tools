@@ -33,35 +33,53 @@ fail() { printf '%s\n' "${red}ERRO: $*${reset}" >&2; }
 
 show_usage() {
   cat <<EOF
-${bold}🚀 DW API Tools${reset}
+${bold}DW API Tools - ajuda rapida${reset}
 
-Uso:
-  dw_api_check [--help] [--mode me|usage|models] [--api-key <token>]
-  ./dw_api_check.sh [--help] [--mode me|usage|models] [--api-key <token>]
+O que e isso?
+  Consulta sua conta DevWServices, consumo e modelos no terminal.
 
-Chave da API:
-  O script procura a chave nesta ordem:
-    1. ANTHROPIC_API_KEY
-    2. DW_API_KEY
-    3. arquivo .env na pasta atual
-    4. arquivo .env ao lado deste script
+Antes de comecar (obrigatorio)
+  Voce precisa da chave (comeca com dw_live_...).
 
-Exemplo Linux/macOS:
-  export ANTHROPIC_API_KEY="dw_live_..."
+  Linux/macOS (so neste terminal):
+    export ANTHROPIC_API_KEY="dw_live_..."
 
-Exemplo PowerShell:
-  \$env:ANTHROPIC_API_KEY = "dw_live_..."
+  PowerShell (so nesta janela):
+    \$env:ANTHROPIC_API_KEY = "dw_live_..."
 
-Modos:
-  me      👤 consulta /v1/me e mostra dados da conta
-  usage   📊 consulta /v1/usage e mostra consumo
-  models  🤖 consulta /v1/models e lista modelos
+  Ou arquivo .env na raiz do projeto:
+    ANTHROPIC_API_KEY=dw_live_...
 
-Exemplos:
-  dw_api_check --help
-  dw_api_check --mode me
-  dw_api_check --mode usage
-  dw_api_check --mode models
+Modos (API)
+  me       Conta (/v1/me)
+  usage    Consumo 1h/6h/24h (/v1/usage)
+  models   Modelos disponiveis (/v1/models)
+  help     Esta ajuda
+
+Como rodar (depois de make install)
+  dw --mode me
+  dw --mode usage
+  dw --mode models
+  dw --help
+
+Como rodar (na pasta do projeto, com Make)
+  make install              Instala o comando dw
+  make uninstall            Remove o comando
+  make me | usage | models  Atalhos de modo
+  make dw MODE=usage        Modo via MODE=
+  make test                 Testes Pester
+  make help                 Ajuda do Makefile
+
+Como rodar (sem instalar)
+  Windows:  .\\dw.cmd --mode usage
+  Unix:     ./dw --mode usage
+
+Problemas comuns
+  - Missing API key: configure a chave ou o .env
+  - 401 Unauthorized: chave errada ou inativa
+  - command not found: feche o terminal ou rode make install
+
+Guia completo: README.md e INSTALL.md
 EOF
 }
 
@@ -255,10 +273,14 @@ while [ "$#" -gt 0 ]; do
 done
 
 case "$mode" in
+  help)
+    show_usage
+    exit 0
+    ;;
   me|usage|models) ;;
   *)
     fail "Modo inválido: $mode"
-    info "Use um destes modos: me, usage ou models."
+    info "Use um destes modos: me, usage, models ou help."
     exit 2
     ;;
 esac
@@ -278,9 +300,15 @@ if [ -z "$api_key" ]; then
 fi
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+# Em desenvolvimento o script vive em src/; o .env fica na raiz do repo.
+repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
 
 if [ -z "$api_key" ]; then
   api_key=$(get_dotenv_value "$script_dir/.env" ANTHROPIC_API_KEY || true)
+fi
+
+if [ -z "$api_key" ] && [ -f "$repo_root/.env" ]; then
+  api_key=$(get_dotenv_value "$repo_root/.env" ANTHROPIC_API_KEY || true)
 fi
 
 if [ -z "$api_key" ]; then

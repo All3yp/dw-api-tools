@@ -3,7 +3,7 @@
 set -eu
 
 INSTALL_DIR=${INSTALL_DIR:-"$HOME/bin"}
-COMMAND_NAME=${COMMAND_NAME:-dw_api_check}
+COMMAND_NAME=${COMMAND_NAME:-dw}
 UNINSTALL=${UNINSTALL:-0}
 ADD_TO_PATH=${ADD_TO_PATH:-ask}
 
@@ -33,7 +33,8 @@ warn() { printf '%s\n' "${yellow}AVISO: $*${reset}"; }
 fail() { printf '%s\n' "${red}ERRO: $*${reset}" >&2; }
 
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-source_script="$script_dir/dw_api_check.sh"
+repo_root=$(CDPATH= cd -- "$script_dir/.." && pwd)
+source_impl="$repo_root/src/dw_api_check.sh"
 target_script="$INSTALL_DIR/$COMMAND_NAME.sh"
 target_shim="$INSTALL_DIR/$COMMAND_NAME"
 
@@ -89,13 +90,14 @@ if [ "$UNINSTALL" = "1" ]; then
   exit 0
 fi
 
-if [ ! -f "$source_script" ]; then
-  fail "Script principal não encontrado: $source_script"
+if [ ! -f "$source_impl" ]; then
+  fail "Script principal nao encontrado: $source_impl"
   exit 1
 fi
 
 mkdir -p "$INSTALL_DIR"
-cp "$source_script" "$target_script"
+# Install a self-contained copy: shim + implementation side by side.
+cp "$source_impl" "$target_script"
 chmod +x "$target_script"
 success "Script copiado para: $target_script"
 

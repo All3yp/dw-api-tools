@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Entrypoint unico: detecta o SO e chama a implementacao certa.
+set -eu
+root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec sh "$root/scripts/dispatch.sh" dw "$@"

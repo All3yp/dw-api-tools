@@ -94,9 +94,57 @@ get_dotenv_value() {
 pretty_json_if_possible() {
   if command -v jq >/dev/null 2>&1; then
     jq .
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -m json.tool
+  elif command -v python >/dev/null 2>&1; then
+    python -m json.tool
   else
     cat
     warn "Dica: instale o 'jq' para ver o JSON formatado de forma mais bonita."
+  fi
+}
+
+show_usage_summary() {
+  body_file=$1
+
+  if command -v jq >/dev/null 2>&1; then
+    timezone=$(jq -r '.timezone // "n/a"' "$body_file")
+    printf '\n%sConsumo (timezone: %s)%s\n' "$bold" "$timezone" "$reset"
+    printf '%s\n' "------------------------------------------------"
+    for window in 1h 6h 24h; do
+      percent=$(jq -r --arg w "$window" '.windows[$w].used_percent // empty' "$body_file")
+      resets_at=$(jq -r --arg w "$window" '.windows[$w].resets_at // empty' "$body_file")
+      [ -n "$percent" ] || continue
+      filled=$(awk -v p="$percent" 'BEGIN { n=int((p/100)*20+0.5); if(n<0)n=0; if(n>20)n=20; print n }')
+      bar=$(printf '%*s' "$filled" '' | tr ' ' '#')
+      empty=$((20 - filled))
+      pad=$(printf '%*s' "$empty" '' | tr ' ' '-')
+      printf '%3s  [%s%s] %5.1f%%  reseta em %s\n' "$window" "$bar" "$pad" "$percent" "$resets_at"
+    done
+    printf '\n'
+    return 0
+  fi
+
+  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    py=python3
+    command -v python3 >/dev/null 2>&1 || py=python
+    "$py" - "$body_file" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+tz = data.get("timezone", "n/a")
+print(f"\nConsumo (timezone: {tz})")
+print("-" * 48)
+windows = data.get("windows") or {}
+for name in ("1h", "6h", "24h"):
+    w = windows.get(name) or {}
+    if "used_percent" not in w:
+        continue
+    percent = float(w["used_percent"])
+    filled = max(0, min(20, int(round(percent / 100 * 20))))
+    bar = "#" * filled + "-" * (20 - filled)
+    print(f"{name:>3}  [{bar}] {percent:5.1f}%  reseta em {w.get('resets_at', 'n/a')}")
+print()
+PY
   fi
 }
 
@@ -201,6 +249,9 @@ http_status=$(curl \
 case "$http_status" in
   2*)
     success "Resposta recebida com sucesso."
+    if [ "$mode" = usage ]; then
+      show_usage_summary "$tmp_body"
+    fi
     pretty_json_if_possible < "$tmp_body"
     ;;
   401)

@@ -83,7 +83,33 @@ Use este comando para confirmar que sua chave está funcionando.
 dw_api_check --mode usage
 ```
 
-Use este comando para consultar dados de uso/consumo.
+Consulta o endpoint `/v1/usage` e mostra o consumo da **sua** chave nas janelas de `1h`, `6h` e `24h` (percentual usado + horário de reset).
+
+Exemplo de saída:
+
+```text
+Consumo (timezone: America/Sao_Paulo)
+------------------------------------------------
+ 1h  [#################---]  83.1%  reseta em 2026-07-14T17:52:11-03:00
+ 6h  [###########---------]  53.7%  reseta em 2026-07-14T19:30:55-03:00
+24h  [##############------]  71.2%  reseta em 2026-07-15T01:28:19-03:00
+```
+
+Logo abaixo também aparece o JSON completo da API.
+
+Equivalente manual (se quiser testar sem o script):
+
+```sh
+# Linux/macOS
+curl -H "Authorization: Bearer dw_live_..." \
+  https://ai.devwservices.shop/v1/usage
+```
+
+```powershell
+# Windows PowerShell
+Invoke-WebRequest -Uri "https://ai.devwservices.shop/v1/usage" `
+  -Headers @{ Authorization = "Bearer dw_live_..." }
+```
 
 ---
 
@@ -155,11 +181,11 @@ ANTHROPIC_API_KEY=dw_live_...
 
 ## 🧩 Modos disponíveis
 
-| Modo | O que faz |
-|---|---|
-| `me` | Consulta `/v1/me` e mostra dados da conta |
-| `usage` | Consulta `/v1/usage` e mostra consumo |
-| `models` | Consulta `/v1/models` e lista modelos disponíveis |
+| Modo | Endpoint | O que faz |
+|---|---|---|
+| `me` | `/v1/me` | Mostra dados da conta |
+| `usage` | `/v1/usage` | Mostra o próprio consumo (`1h` / `6h` / `24h`) |
+| `models` | `/v1/models` | Lista os modelos disponíveis |
 
 ---
 
@@ -169,7 +195,7 @@ Funcionou se:
 
 - `dw_api_check --help` mostra a ajuda da ferramenta
 - `dw_api_check --mode me` retorna dados da sua conta
-- `dw_api_check --mode usage` retorna dados de consumo
+- `dw_api_check --mode usage` mostra o resumo de consumo (barras + `%` + reset) e o JSON
 - `dw_api_check --mode models` retorna a lista de modelos
 
 ---

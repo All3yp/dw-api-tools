@@ -1,0 +1,19 @@
+# Secrets / local env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Shell leftovers
+*.tmp
+*.log

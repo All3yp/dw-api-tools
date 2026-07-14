@@ -100,4 +100,35 @@ $uri = switch ($Mode) {
   default { 'https://ai.devwservices.shop/v1/me' }
 }
 
-Invoke-RestMethod -Uri $uri -Headers $headers
+function Show-UsageSummary {
+  param([Parameter(Mandatory = $true)]$Response)
+
+  Write-Host ""
+  Write-Host "Consumo (timezone: $($Response.timezone))"
+  Write-Host ("-" * 48)
+
+  foreach ($windowName in @('1h', '6h', '24h')) {
+    $window = $Response.windows.$windowName
+    if (-not $window) { continue }
+
+    $percent = [double]$window.used_percent
+    $barWidth = 20
+    $filled = [Math]::Max(0, [Math]::Min($barWidth, [int][Math]::Round($percent / 100 * $barWidth)))
+    $bar = ("#" * $filled) + ("-" * ($barWidth - $filled))
+    Write-Host ("{0,3}  [{1}] {2,5:N1}%  reseta em {3}" -f $windowName, $bar, $percent, $window.resets_at)
+  }
+
+  Write-Host ""
+}
+
+try {
+  $response = Invoke-RestMethod -Uri $uri -Headers $headers
+} catch {
+  throw "Failed to call $uri. $($_.Exception.Message)"
+}
+
+if ($Mode -eq 'usage') {
+  Show-UsageSummary -Response $response
+}
+
+$response | ConvertTo-Json -Depth 20

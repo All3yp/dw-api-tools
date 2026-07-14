@@ -107,10 +107,95 @@ pretty_json_if_possible() {
 show_usage_summary() {
   body_file=$1
 
+  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    py=python3
+    command -v python3 >/dev/null 2>&1 || py=python
+    "$py" - "$body_file" <<'PY'
+import json
+import sys
+from datetime import datetime, timezone
+
+try:
+    from datetime import UTC
+except ImportError:
+    UTC = timezone.utc
+
+
+def level_for(percent: float) -> str:
+    if percent >= 90:
+        return "critico"
+    if percent >= 75:
+        return "alto"
+    if percent >= 50:
+        return "medio"
+    if percent > 0:
+        return "baixo"
+    return "livre"
+
+
+def format_reset(value):
+    if not value:
+        return "ja resetada"
+    try:
+        reset_at = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return str(value)
+    now = datetime.now(reset_at.tzinfo or UTC)
+    delta = reset_at - now
+    total_seconds = int(delta.total_seconds())
+    if total_seconds <= 0:
+        return "ja resetada"
+    days, rem = divmod(total_seconds, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes = rem // 60
+    parts = []
+    if days:
+        parts.append(f"{days}d")
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes or not parts:
+        parts.append(f"{minutes}min")
+    clock = reset_at.astimezone().strftime("%H:%M")
+    return f"em {' '.join(parts)} ({clock})"
+
+
+data = json.load(open(sys.argv[1], encoding="utf-8"))
+tz = data.get("timezone") or "n/a"
+labels = {
+    "1h": "Ultima 1 hora",
+    "6h": "Ultimas 6 horas",
+    "24h": "Ultimas 24 horas",
+}
+windows = data.get("windows") or {}
+
+print()
+print("Seu consumo")
+print(f"Fuso: {tz}")
+print("-" * 76)
+print(f"{'Janela':<18} {'Uso':<22} {'%':>7}  {'Nivel':<8}  Reset")
+print("-" * 76)
+for name in ("1h", "6h", "24h"):
+    window = windows.get(name) or {}
+    if "used_percent" not in window:
+        continue
+    percent = float(window["used_percent"])
+    filled = max(0, min(20, int(round(percent / 100 * 20))))
+    bar = "#" * filled + "." * (20 - filled)
+    print(
+        f"{labels[name]:<18} [{bar}] {percent:6.1f}%  {level_for(percent):<8}  "
+        f"{format_reset(window.get('resets_at'))}"
+    )
+print("-" * 76)
+print("Legenda: livre=0% | baixo<50% | medio 50-74% | alto 75-89% | critico>=90%")
+print()
+PY
+    return 0
+  fi
+
   if command -v jq >/dev/null 2>&1; then
     timezone=$(jq -r '.timezone // "n/a"' "$body_file")
-    printf '\n%sConsumo (timezone: %s)%s\n' "$bold" "$timezone" "$reset"
-    printf '%s\n' "------------------------------------------------"
+    printf '\nSeu consumo\nFuso: %s\n' "$timezone"
+    printf '%s\n' "----------------------------------------------------------------------------"
     for window in 1h 6h 24h; do
       percent=$(jq -r --arg w "$window" '.windows[$w].used_percent // empty' "$body_file")
       resets_at=$(jq -r --arg w "$window" '.windows[$w].resets_at // empty' "$body_file")
@@ -118,34 +203,20 @@ show_usage_summary() {
       filled=$(awk -v p="$percent" 'BEGIN { n=int((p/100)*20+0.5); if(n<0)n=0; if(n>20)n=20; print n }')
       bar=$(printf '%*s' "$filled" '' | tr ' ' '#')
       empty=$((20 - filled))
-      pad=$(printf '%*s' "$empty" '' | tr ' ' '-')
-      printf '%3s  [%s%s] %5.1f%%  reseta em %s\n' "$window" "$bar" "$pad" "$percent" "$resets_at"
+      pad=$(printf '%*s' "$empty" '' | tr ' ' '.')
+      case "$window" in
+        1h) title="Ultima 1 hora" ;;
+        6h) title="Ultimas 6 horas" ;;
+        24h) title="Ultimas 24 horas" ;;
+      esac
+      printf '%-18s [%s%s] %6.1f%%  reset: %s\n' "$title" "$bar" "$pad" "$percent" "${resets_at:-ja resetada}"
     done
     printf '\n'
     return 0
   fi
 
-  if command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
-    py=python3
-    command -v python3 >/dev/null 2>&1 || py=python
-    "$py" - "$body_file" <<'PY'
-import json, sys
-data = json.load(open(sys.argv[1], encoding="utf-8"))
-tz = data.get("timezone", "n/a")
-print(f"\nConsumo (timezone: {tz})")
-print("-" * 48)
-windows = data.get("windows") or {}
-for name in ("1h", "6h", "24h"):
-    w = windows.get(name) or {}
-    if "used_percent" not in w:
-        continue
-    percent = float(w["used_percent"])
-    filled = max(0, min(20, int(round(percent / 100 * 20))))
-    bar = "#" * filled + "-" * (20 - filled)
-    print(f"{name:>3}  [{bar}] {percent:5.1f}%  reseta em {w.get('resets_at', 'n/a')}")
-print()
-PY
-  fi
+  warn "Nao foi possivel formatar o consumo (instale python3 ou jq)."
+  cat "$body_file"
 }
 
 api_key=${ANTHROPIC_API_KEY:-}
@@ -251,8 +322,9 @@ case "$http_status" in
     success "Resposta recebida com sucesso."
     if [ "$mode" = usage ]; then
       show_usage_summary "$tmp_body"
+    else
+      pretty_json_if_possible < "$tmp_body"
     fi
-    pretty_json_if_possible < "$tmp_body"
     ;;
   401)
     fail "401 Unauthorized: a chave da API foi recusada."

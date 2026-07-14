@@ -58,13 +58,19 @@ Set-ExecutionPolicy -Scope Process Bypass -Force
 .\install.ps1
 ```
 
-O instalador deve copiar o comando para uma pasta global do seu usuário.
+O instalador faz 3 coisas:
+
+1. Copia `dw_api_check.ps1` e `DwApiCheck.psm1` para `%USERPROFILE%\bin`
+2. Adiciona essa pasta ao **PATH do usuário** (cmd, PowerShell, Windows Terminal)
+3. Registra o comando no **profile do PowerShell**, para funcionar mesmo sem depender do PATH
+
+Depois disso, você pode rodar `dw_api_check` de **qualquer pasta**, sem entrar de novo no repositório.
 
 ---
 
 ## 4. Feche e abra o PowerShell novamente
 
-Isso ajuda o Windows a reconhecer o novo comando.
+Isso ajuda o Windows a carregar o PATH e o profile novos.
 
 ---
 

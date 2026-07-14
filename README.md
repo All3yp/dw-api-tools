@@ -27,9 +27,15 @@ A ideia é: copiar, colar e testar.
 
 ### 1. Instale o comando
 
-Siga o passo a passo do arquivo:
+No Windows, na pasta do projeto:
 
-👉 [INSTALL.md](INSTALL.md)
+```powershell
+.\install.ps1
+```
+
+Isso coloca `dw_api_check` em `%USERPROFILE%\bin`, no PATH do usuário e no profile do PowerShell — assim você roda de qualquer pasta.
+
+Passo a passo completo: 👉 [INSTALL.md](INSTALL.md)
 
 ---
 
@@ -83,21 +89,34 @@ Use este comando para confirmar que sua chave está funcionando.
 dw_api_check --mode usage
 ```
 
-Consulta o endpoint `/v1/usage` e mostra o consumo da **sua** chave nas janelas de `1h`, `6h` e `24h` (percentual usado + horário de reset).
+Consulta o endpoint `/v1/usage` e mostra o consumo da **sua** chave de forma parseada (sem JSON cru).
+
+O que aparece na tela:
+
+| Coluna | Significado |
+|---|---|
+| `Janela` | Período: última 1h, 6h ou 24h |
+| `Uso` | Barra visual do percentual consumido |
+| `%` | Percentual usado na janela |
+| `Nivel` | Classificação do uso (`livre` → `critico`) |
+| `Reset` | Tempo relativo até liberar de novo (`em 1h 19min (19:30)` ou `ja resetada`) |
 
 Exemplo de saída:
 
 ```text
-Consumo (timezone: America/Sao_Paulo)
-------------------------------------------------
- 1h  [#################---]  83.1%  reseta em 2026-07-14T17:52:11-03:00
- 6h  [###########---------]  53.7%  reseta em 2026-07-14T19:30:55-03:00
-24h  [##############------]  71.2%  reseta em 2026-07-15T01:28:19-03:00
+Seu consumo
+Fuso: America/Sao_Paulo
+----------------------------------------------------------------------------
+Janela             Uso                          %  Nivel     Reset
+----------------------------------------------------------------------------
+Ultima 1 hora      [....................]    0.0%  livre     ja resetada
+Ultimas 6 horas    [###########.........]   55.2%  medio     em 1h 19min (19:30)
+Ultimas 24 horas   [##############......]   72.0%  medio     em 7h 15min (01:28)
+----------------------------------------------------------------------------
+Legenda: livre=0% | baixo<50% | medio 50-74% | alto 75-89% | critico>=90%
 ```
 
-Logo abaixo também aparece o JSON completo da API.
-
-Equivalente manual (se quiser testar sem o script):
+Equivalente manual (JSON puro da API, se quiser testar sem o script):
 
 ```sh
 # Linux/macOS
@@ -195,7 +214,7 @@ Funcionou se:
 
 - `dw_api_check --help` mostra a ajuda da ferramenta
 - `dw_api_check --mode me` retorna dados da sua conta
-- `dw_api_check --mode usage` mostra o resumo de consumo (barras + `%` + reset) e o JSON
+- `dw_api_check --mode usage` mostra o consumo parseado (janelas, `%`, nível e tempo de reset)
 - `dw_api_check --mode models` retorna a lista de modelos
 
 ---
@@ -271,6 +290,16 @@ No Windows PowerShell:
 
 ```powershell
 .\install.ps1 -Uninstall
+```
+
+---
+
+## 🧪 Testes unitários
+
+Os helpers ficam em `DwApiCheck.psm1` e os testes em `tests/` (Pester 5+).
+
+```powershell
+.\Invoke-Tests.ps1
 ```
 
 ---

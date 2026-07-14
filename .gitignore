@@ -17,3 +17,7 @@ desktop.ini
 # Shell leftovers
 *.tmp
 *.log
+
+# Tests
+TestResults/
+coverage.xml
